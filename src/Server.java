@@ -1,4 +1,6 @@
+import javax.imageio.ImageIO;
 import javax.xml.crypto.Data;
+import java.awt.image.BufferedImage;
 import java.io.*;
 import java.net.DatagramPacket;
 import java.net.DatagramSocket;
@@ -37,55 +39,76 @@ public class Server {
     public static ArrayList<DatagramPacket> ImagetoPacketArray(File file) throws IOException {
 
         ArrayList<DatagramPacket> data = new ArrayList<>();
+        for (long i = 0; i <file.length(); i+=1014) {
 
-        for (long i = 0; i <file.length(); i+=1024) {
-            if (i+1024 > file.length()){
-                RandomAccessFile accessFile = new RandomAccessFile(file,"rw");
-                long temp = file.length() - i+1014;
-                ByteBuffer buffer = ByteBuffer.allocate((int)temp+2+8);
-                byte [] b = new byte[(int)temp];
-                accessFile.read(b);
-                buffer.putShort((short)1);
-                buffer.putLong(getCurrentLedger());
-                buffer.put(b);
-                buffer.flip();
-                data.add(new DatagramPacket(buffer.array(),buffer.array().length));
-                return data;
-            }
-            RandomAccessFile accessFile = new RandomAccessFile(file,"rw");
-            ByteBuffer buffer = ByteBuffer.allocate(1024);
-            //read 1024 bytes
-            byte [] b = new byte[1014];
-            accessFile.read(b);
-            buffer.putShort((short)1);
-            buffer.putLong(getCurrentLedger());
-            buffer.put(b);
-            buffer.flip();
-            data.add(new DatagramPacket(buffer.array(),buffer.array().length));
+            RandomAccessFile rand = new RandomAccessFile(file,"rw");
+
+            rand.seek(i);
+
+            byte [] bytes = new byte[1014];
+
+            rand.read(bytes);
 
 
+            ByteBuffer buff = ByteBuffer.allocate(1024);
 
+            buff.putShort((short)1);//opcode
 
-            //place packet in data list
+            buff.putLong(getCurrentLedger());
+
+            buff.put(bytes);
+
+            buff.flip();
+
+            DatagramPacket d = new DatagramPacket(buff.array(),buff.array().length);
+
+            data.add(d);
+
         }
+
+
+
+
+
+
+
         return data;
+    }
+    public static void WriteArrayList(ArrayList<DatagramPacket>data,File file) throws IOException {
+        RandomAccessFile randaccess = new RandomAccessFile(file,"rw");
+        for (long i = 0; i <data.size() ; i+=1014) {
+            randaccess.seek(i);
+            ByteBuffer buffer = ByteBuffer.allocate(data.get((int)i).getLength());
+            buffer.put(data.get(((int) i)).getData());
+            buffer.flip();
+            buffer.getShort();
+            buffer.getLong();
+
+            byte[] bytes = new byte[data.get((int)i).getLength()-10];
+
+            buffer.get(bytes, 0, bytes.length);
+
+            randaccess.write(bytes);
+
+        }
+
     }
 
 
 
 
-
    public static void main(String[] args) throws Exception {
-        int mcPort = 12345;
-        String mcIPStr = "230.1.1.1";
+        int mcPort = 2770;
+        String mcIPStr = "192.168.1.21";//"230.1.1.1";
         DatagramSocket udpSocket = new DatagramSocket();
         InetAddress mcIPAddress = InetAddress.getByName(mcIPStr);
-       ArrayList<DatagramPacket> data = ImagetoPacketArray(new File("Image.jpg"));
-       byte[] msg = ImageToBytes(new File("Image.jpg"));
-        ByteBuffer b = ByteBuffer.allocate(2+2+2);
+       File f = new File("Image.jpg");
+       byte[] filebytes = ImageToBytes(f);
+        ByteBuffer b = ByteBuffer.allocate(2+8+8);
         b.putShort((short)0);       //send packet with opcode 0
-        b.putShort((short)data.size());
-        b.putShort((short)data.get(data.size()-1).getLength());
+        b.putLong(getCurrentLedger());
+        b.putLong(f.length());
+       System.out.println(f.length());
         b.flip();
 
 
@@ -93,13 +116,13 @@ public class Server {
         packet.setAddress(mcIPAddress);
         packet.setPort(mcPort);
         udpSocket.send(packet);
-        for (DatagramPacket d: data){
 
-            d.setAddress(mcIPAddress);
-            d.setPort(mcPort);
-            System.out.println("Sending:"+data.indexOf(d)+" :Size:"+d.getLength());
-            udpSocket.send(d);
-        }
+       DatagramPacket filep = new DatagramPacket(filebytes, filebytes.length);
+       filep.setAddress(mcIPAddress);
+       filep.setPort(mcPort);
+       System.out.println(new String(filep.getData()));
+       udpSocket.send(filep);
+
 
 
         System.out.println("Sent a  multicast message.");

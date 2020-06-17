@@ -1,7 +1,4 @@
-import java.io.File;
-import java.io.FileNotFoundException;
-import java.io.IOException;
-import java.io.RandomAccessFile;
+import java.io.*;
 import java.lang.reflect.Field;
 import java.net.DatagramPacket;
 import java.net.FileNameMap;
@@ -9,6 +6,7 @@ import java.net.InetAddress;
 import java.net.MulticastSocket;
 import java.nio.ByteBuffer;
 import java.util.ArrayList;
+import java.util.Arrays;
 
 
 public class Client {
@@ -21,14 +19,29 @@ public class Client {
 
 
     }
-    public static void WriteArrayList(ArrayList<DatagramPacket>data,File file) throws FileNotFoundException {
-        RandomAccessFile randaccess = new RandomAccessFile(file,"rw");
 
+    public static void WriteArrayList(ArrayList<DatagramPacket>data,File file) throws IOException {
+        RandomAccessFile randaccess = new RandomAccessFile(file,"rw");
+        for (long i = 0; i <data.size() ; i+=1024) {
+            randaccess.seek(i);
+            ByteBuffer buffer = ByteBuffer.allocate(data.get((int)i).getLength());
+            buffer.put(data.get(((int) i)).getData());
+            buffer.flip();
+            buffer.getShort();
+            buffer.getLong();
+
+            byte[] bytes = new byte[data.get((int)i).getLength()-10];
+
+
+            buffer.get(bytes, 0, bytes.length);
+            randaccess.write(bytes);
+
+        }
 
     }
 
     public static void main(String[] args) throws Exception {
-        int mcPort = 12345;
+        int mcPort = 2770;
         String mcIPStr = "230.1.1.1";
         MulticastSocket mcSocket = null;
         InetAddress mcIPAddress = null;
@@ -38,44 +51,30 @@ public class Client {
                 + mcSocket.getLocalSocketAddress());
         mcSocket.joinGroup(mcIPAddress);
 
-        DatagramPacket packet = new DatagramPacket(new byte[6], 6);
+        DatagramPacket packet = new DatagramPacket(new byte[18], 18);
 
 
         System.out.println("Waiting for a  multicast message...");
         mcSocket.receive(packet);
         System.out.println("[Recieved]!");
-        ByteBuffer byteBuffer = ByteBuffer.allocate(packet.getLength());
+        ByteBuffer byteBuffer = ByteBuffer.allocate(2+8+8);
         byteBuffer.put(packet.getData());
         byteBuffer.flip();
         short opcode = byteBuffer.getShort();
-        short dataSize = byteBuffer.getShort();
-        short oddpacket = byteBuffer.getShort();
+        long ledgernum = byteBuffer.getLong();
+        long filesize = byteBuffer.getLong();
         System.out.println("opcode:"+opcode);
-        System.out.println("dataSize:"+dataSize);
-        System.out.println("oddpacket:"+oddpacket);
+        System.out.println("ledgernum:"+ledgernum);
+        System.out.println("filesize:"+filesize);
 
-        ArrayList<DatagramPacket> data = new ArrayList<>(dataSize);
+        DatagramPacket filepacket = new DatagramPacket(new byte[(int)filesize], (int)filesize);
+        mcSocket.receive(filepacket);
+        System.out.println(new String(filepacket.getData()));
+        ByteBuffer b = ByteBuffer.allocate((int)filesize);
+        b.put(filepacket.getData());
+        b.flip();
+        WriteBytes(b.array(),ledgernum);
 
-        for (int i = 0; i < dataSize; i++) {
-
-            if(i == dataSize-1){
-                System.out.println("Last Packet #:"+i);
-                DatagramPacket p = new DatagramPacket(new byte[oddpacket], oddpacket);
-
-                mcSocket.receive(p);
-                data.add(p);
-                break;
-            }
-            System.out.println("Packet #:"+i);
-            DatagramPacket p = new DatagramPacket(new byte[1024], 1024);
-
-            mcSocket.receive(p);
-            data.add(p);
-
-
-        }
-
-        // WriteBytes(bytes,ledger);
 
         mcSocket.leaveGroup(mcIPAddress);
         mcSocket.close();
