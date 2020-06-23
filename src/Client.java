@@ -39,6 +39,15 @@ public class Client {
         }
 
     }
+    public static void BashCommand() throws IOException {
+        //gsettings set org.gnome.desktop.background picture-uri file:///home/cj/Pictures/Wallpapers/back.jpg
+        Process process = null;
+        try {
+            process = Runtime.getRuntime().exec("gsettings set org.gnome.desktop.background picture-uri file:///home/cj/Pictures/Wallpapers/back.jpg");
+        } catch (IOException e) {
+            e.printStackTrace();
+        }
+    }
 
     public static void main(String[] args) throws Exception {
         int mcPort = 2770;
