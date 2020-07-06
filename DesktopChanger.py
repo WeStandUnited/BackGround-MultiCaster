@@ -1,5 +1,6 @@
 import struct
 import ctypes
+import sys
 
 PATH = 'D:\\Pictures\\background.jpg'
 SPI_SETDESKWALLPAPER = 20
@@ -15,4 +16,4 @@ def changeBG(path):
     else:
         ctypes.windll.user32.SystemParametersInfoA(SPI_SETDESKWALLPAPER, 0, PATH, 3)
 
-changeBG(PATH)
+changeBG(sys.argv[1])

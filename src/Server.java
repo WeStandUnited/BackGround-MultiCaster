@@ -1,3 +1,4 @@
+import javax.crypto.spec.SecretKeySpec;
 import javax.imageio.ImageIO;
 import javax.xml.crypto.Data;
 import java.awt.image.BufferedImage;
@@ -7,6 +8,7 @@ import java.net.DatagramSocket;
 import java.net.InetAddress;
 import java.nio.ByteBuffer;
 import java.util.ArrayList;
+import java.util.Random;
 import java.util.Scanner;
 
 public class Server {
@@ -29,7 +31,14 @@ public class Server {
 
 
     }
+    public static void SetLedger(long ledger) throws IOException {
 
+        FileWriter myWriter = new FileWriter("LedgerServer.txt");
+        String s=String.valueOf(ledger);
+        myWriter.write(s);
+        myWriter.close();
+
+    }
     public static byte [] ImageToBytes(File file) throws IOException {
         RandomAccessFile accessFile = new RandomAccessFile(file,"rw");
         //iterate through file , but do not over extend
@@ -114,6 +123,18 @@ public class Server {
         }
 
     }
+    static public String generateString(int b){
+        Random r = new Random();
+        String output = "";
+        StringBuilder stringBuilder = new StringBuilder(output);
+
+        for(int i = 0;i < b;i++){
+            char c = (char)(r.nextInt(26) + 'a');
+            stringBuilder.append(c);
+        }
+
+        return stringBuilder.toString();
+    }
 
 
 
@@ -123,30 +144,80 @@ public class Server {
         String mcIPStr ="230.1.1.1";
         DatagramSocket udpSocket = new DatagramSocket();
         InetAddress mcIPAddress = InetAddress.getByName(mcIPStr);
-       File f = new File("Image.jpg");
-       byte[] filebytes = ImageToBytes(f);
-        ByteBuffer b = ByteBuffer.allocate(2+8+8);
-        b.putShort((short)0);       //send packet with opcode 0
-        b.putLong(getCurrentLedger());
-        b.putLong(f.length());
-       System.out.println(f.length());
-        b.flip();
+
+        Scanner kb = new Scanner(System.in);
+
+        String input = "";
+
+        while (!(input.equals("exit"))){
+            try {
+                System.out.print("What Image would you like to use?:");
+                input = kb.next();
+
+                File f = new File(input);
+                if(!f.exists()) {
+
+                    throw new FileNotFoundException();
+                }
+                SetLedger(getCurrentLedger()+1);
+                byte[] filebytes = ImageToBytes(f);
 
 
-        DatagramPacket packet = new DatagramPacket(b.array(), b.array().length);
-        packet.setAddress(mcIPAddress);
-        packet.setPort(mcPort);
-        udpSocket.send(packet);
+//       SecretKeySpec key = Crypo.createSecretKey(generateString(20).toCharArray(),
+//               "%213^^41".getBytes(), 4000, 128);
+//        ByteBuffer keyBuff = ByteBuffer.allocate(key.getEncoded().length);
+//        keyBuff.put(key.getEncoded());
+//        keyBuff.flip();
+//
+//        //SENDING KEY!
+//       DatagramPacket keypacket = new DatagramPacket(keyBuff.array(), keyBuff.array().length);
+//       keypacket.setAddress(mcIPAddress);
+//       keypacket.setPort(mcPort);
+//       udpSocket.send(keypacket);
 
-       DatagramPacket filep = new DatagramPacket(filebytes, filebytes.length);
-       filep.setAddress(mcIPAddress);
-       filep.setPort(mcPort);
-       System.out.println(new String(filep.getData()));
-       udpSocket.send(filep);
 
 
-        System.out.println("Sent a  multicast message.");
-        System.out.println("Exiting application");
+            ByteBuffer b = ByteBuffer.allocate(2+8+8);
+            b.putShort((short)0);       //send packet with opcode 0
+            b.putLong(getCurrentLedger());
+            b.putLong(f.length());
+            System.out.println(f.length());
+            b.flip();
+
+            DatagramPacket packet = new DatagramPacket(b.array(), b.array().length);
+            packet.setAddress(mcIPAddress);
+            packet.setPort(mcPort);
+            udpSocket.send(packet);
+
+            DatagramPacket filep = new DatagramPacket(filebytes, filebytes.length);
+            filep.setAddress(mcIPAddress);
+            filep.setPort(mcPort);
+            udpSocket.send(filep);
+
+
+            System.out.println("Sent a  multicast message.");
+            }catch (FileNotFoundException e){
+                if (!(input.equals("exit"))) {
+                    System.out.println("File Not Found");
+                    //send packet with opcode 0
+
+                }
+            }
+
+        }
+
+
+       ByteBuffer bb = ByteBuffer.allocate(2+8+8);
+       bb.putShort((short)-2);       //send packet with opcode 0
+       bb.putLong(getCurrentLedger());
+       bb.putLong(0);
+       bb.flip();
+
+       DatagramPacket epack = new DatagramPacket(bb.array(), bb.array().length);
+       epack.setAddress(mcIPAddress);
+       epack.setPort(mcPort);
+       udpSocket.send(epack);
+       System.out.println("Exiting application");
         udpSocket.close();
     }
 }
