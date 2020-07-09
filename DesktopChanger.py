@@ -2,7 +2,7 @@ import struct
 import ctypes
 import sys
 
-PATH = 'D:\\Pictures\\background.jpg'
+PATH = 'D:/csc445/BackGround-MultiCaster/'#this path must be changed to the location of the program
 SPI_SETDESKWALLPAPER = 20
 
 def is_64bit_windows():
@@ -12,8 +12,8 @@ def is_64bit_windows():
 def changeBG(path):
     """Change background depending on bit size"""
     if is_64bit_windows():
-        ctypes.windll.user32.SystemParametersInfoW(SPI_SETDESKWALLPAPER, 0, PATH, 3)
+        ctypes.windll.user32.SystemParametersInfoW(SPI_SETDESKWALLPAPER, 0, PATH+path, 3)
     else:
-        ctypes.windll.user32.SystemParametersInfoA(SPI_SETDESKWALLPAPER, 0, PATH, 3)
+        ctypes.windll.user32.SystemParametersInfoA(SPI_SETDESKWALLPAPER, 0, PATH+path, 3)
 
 changeBG(sys.argv[1])

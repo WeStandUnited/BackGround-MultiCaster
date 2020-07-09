@@ -75,7 +75,6 @@ public class Client {
 
     public static void main(String[] args) throws Exception {
 
-        System.exit(1);
         int mcPort = 2770;
         String mcIPStr = "230.1.1.1";
         MulticastSocket mcSocket = null;
