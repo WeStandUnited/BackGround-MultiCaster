@@ -140,7 +140,7 @@ public class Client {
                     BashCommand("Image" + getCurrentLedger() + ".jpg");
                     System.out.println("BackGround Change!");
                 }else{
-
+                    WindowsCommand("Image" + getCurrentLedger() + ".jpg");
                 }
                 //end if
             }
