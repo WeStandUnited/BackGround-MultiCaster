@@ -59,17 +59,23 @@ public class Client {
         }
 
     }
-    public static void BashCommand() throws IOException {
-        //gsettings set org.gnome.desktop.background picture-uri file:///home/cj/Pictures/Wallpapers/back.jpg
+    public static void BashCommand(String filename) throws IOException {
+        //gsettings set org.gnome.desktop.background picture-uri file:///home/cj/csc445/Project3/
         Process process = null;
         try {
-            process = Runtime.getRuntime().exec("gsettings set org.gnome.desktop.background picture-uri file:///home/cj/Pictures/Wallpapers/back.jpg");
+            process = Runtime.getRuntime().exec("gsettings set org.gnome.desktop.background picture-uri file:///home/cj/csc445/Project3/"+filename);
         } catch (IOException e) {
             e.printStackTrace();
         }
     }
+    public static void WindowsCommand(String filename) throws IOException {
+        Runtime.getRuntime().exec("python DesktopChanger.py "+filename);
+
+    }
 
     public static void main(String[] args) throws Exception {
+
+        System.exit(1);
         int mcPort = 2770;
         String mcIPStr = "230.1.1.1";
         MulticastSocket mcSocket = null;
@@ -130,50 +136,14 @@ public class Client {
 
                 //if linux
                 //BashCommand();
-                System.out.println("BackGround Change!");
-
-                //end if
-            }
-
-
-            if (opcode == 1) {
-                //TODO Check if new ledger is greater than current if so send Broadcast request!
-
-                if (ledgernum > getCurrentLedger()){
-                    //Send a Please send file!
-                    ByteBuffer byteBuffer1 = ByteBuffer.allocate(2+8+8);
-                    byteBuffer1.putShort((short)1);       //send packet with opcode 0
-                    byteBuffer1.putLong(getCurrentLedger());
-                    byteBuffer1.putLong(filesize);
-                    byteBuffer1.flip();
-
-
-                    //send ledger challenge
-                    DatagramPacket requestPacket = new DatagramPacket(byteBuffer1.array(), byteBuffer1.array().length);
-                    requestPacket.setAddress(mcIPAddress);
-                    requestPacket.setPort(mcPort);
-                    mcSocket.send(requestPacket);
-                    System.out.println("Sending Request!");
-
+                if(System.getProperty("os.name").equals("Linux")) {
+                    BashCommand("Image" + getCurrentLedger() + ".jpg");
+                    System.out.println("BackGround Change!");
+                }else{
 
                 }
-
+                //end if
             }
-
-            //Ledger Challenge Packing!
-            ByteBuffer bb = ByteBuffer.allocate(2+8+8);
-            bb.putShort((short)1);       //send packet with opcode 0
-            bb.putLong(getCurrentLedger());
-            bb.putLong(filesize);
-            bb.flip();
-
-
-            //send ledger challenge
-            DatagramPacket p = new DatagramPacket(bb.array(), bb.array().length);
-            p.setAddress(mcIPAddress);
-            p.setPort(mcPort);
-            mcSocket.send(packet);
-            System.out.println("Sending Ledger Challenge!");
 
 
 
